@@ -2,34 +2,18 @@
 #define IVLMAINWINDOW_H
 
 #include <QMainWindow>
-#include <QSerialPort>
-#include <QSerialPortInfo>
 
 #include "qcustomplot.h"
 #include "ui_mainwindow.h"
+#include "ivlserialport.h"
+#include "ivlserver.h"
 
 
 namespace Ui {
 class IVLMainWindow;
 }
 
-class IVLSerialPort: public QWidget{
-    Q_OBJECT
-private:
-    QSerialPort *m_serial;
-    QByteArray  m_message;
 
-    ~IVLSerialPort();
-public:
-    explicit IVLSerialPort(QWidget* parent=0);
-    void connectToFirstFoundCOM() const;
-
-private slots:
-    void slotSerialRead();
-
-signals:
-    void signalDataRead();
-};
 
 class IVLMainWindow : public QMainWindow
 {
@@ -40,11 +24,19 @@ public:
 
 private:
     Ui::MainWindow *m_ui;
-    IVLSerialPort  *m_IVLSerial;
+    IVLSerialPort  *m_ivlSerial;
+    IVLServer      *m_ivlTCPServer;
+    QTimer         *m_dataTimer;
+
+    int pointPosition;
+    QMap<QString, QVector<double>> dataToGrafs;
 
 private:
 
     void setupAxisRect(QCustomPlot* customPlot , QVector<QCPRange>& range);
+
+private slots:
+    void slotRepaint();
 };
 
 #endif // IVLMAINWINDOW_H

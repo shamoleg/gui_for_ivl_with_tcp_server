@@ -8,6 +8,8 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport serialport
 
+QT += network
+
 TARGET = gui_for_ivl_with_tcp_server
 TEMPLATE = app
 
@@ -26,11 +28,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         ivlmainwindow.cpp \
-        qcustomplot.cpp
+        qcustomplot.cpp \
+    ivlserialport.cpp \
+    ivlserver.cpp
 
 HEADERS += \
         ivlmainwindow.h \
-        qcustomplot.h
+        qcustomplot.h \
+    ivlserialport.h \
+    ivlserver.h
 
 FORMS += \
     mainwindow.ui

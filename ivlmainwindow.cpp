@@ -6,8 +6,23 @@ IVLMainWindow::IVLMainWindow(QWidget *parent) :
     m_ui(new Ui::MainWindow)
 {
     m_ui->setupUi(this);
-    m_IVLSerial = new IVLSerialPort;
-    m_IVLSerial->connectToFirstFoundCOM();
+
+
+
+    m_ivlSerial = new IVLSerialPort;
+    m_ivlSerial->connectToFirstFoundCOM();
+
+    m_ivlTCPServer = new IVLServer(2323, m_ivlSerial);
+
+    dataToGrafs = {
+        {"VOLUME_X", QVector<double>(511)},
+        {"VOLUME_Y", QVector<double>(511)},
+
+        {"PRESSURE_X", QVector<double>(511)},
+        {"PRESSURE_Y", QVector<double>(511)},
+    };
+    pointPosition =-1;
+    qDebug() << dataToGrafs["VOLUME_X"].size();
 
     QVector<QCPRange> rangeFlow = {{-0.5, 1.5}, {1, 500}};
     this->setupAxisRect(m_ui->graphFlow, rangeFlow);
@@ -24,6 +39,11 @@ IVLMainWindow::IVLMainWindow(QWidget *parent) :
     int w = m_ui->logo->width();
     int h = m_ui->logo->height();
     m_ui->logo->setPixmap(pix.scaled(w, h, Qt::KeepAspectRatio));
+
+    m_dataTimer = new QTimer;
+    m_dataTimer->start(50);
+
+    connect(m_dataTimer, SIGNAL(timeout()), this, SLOT(slotRepaint()));
 
 }
 
@@ -50,46 +70,43 @@ void IVLMainWindow::setupAxisRect(QCustomPlot* customPlot , QVector<QCPRange>& r
     customPlot->graph(0)->setPen(QPen(QColor(66, 145, 255), 4));
 }
 
-IVLSerialPort::IVLSerialPort(QWidget *parent):
-    QWidget(parent)
+void IVLMainWindow::slotRepaint()
 {
-    m_serial  = new QSerialPort;
-    connect(m_serial, SIGNAL(readyRead()), this, SLOT(slotSerialRead()));
-}
 
-IVLSerialPort::~IVLSerialPort()
-{
-    delete m_serial;
-}
+    QString spo = "Содержание кислорода: %1 \%";
 
-void IVLSerialPort::connectToFirstFoundCOM() const{
-    m_serial->close();
-    const auto listPort = QSerialPortInfo::availablePorts();
-    qDebug() << "[LOG ]: Number of connection is " << listPort.size();
+    auto dataFromMassage = m_ivlSerial->m_ivlMessage->getData();
+    m_ui->label->setText(spo.arg(dataFromMassage[0]));
+    m_ui->label_2->setText(spo.arg(dataFromMassage[0]));
 
-    if(listPort.size()!= 0)
-    {
-        qDebug()<< "[LOG ]: Connect to " <<  listPort[0].serialNumber() << listPort[0].portName();
-        m_serial->setPortName(listPort[0].portName());
-        m_serial->setDataBits(QSerialPort::Data8);
-        m_serial->setBaudRate(QSerialPort::Baud115200);
-        m_serial->setStopBits(QSerialPort::OneStop);
-        m_serial->setParity(QSerialPort::NoParity);
-        m_serial->setFlowControl(QSerialPort::NoFlowControl);
+    const int sizeOfGap = 10;
+    pointPosition++;
+
+    dataToGrafs["VOLUME_X"][pointPosition] = dataFromMassage[0];
+    dataToGrafs["VOLUME_Y"][pointPosition] = pointPosition;
+
+
+    dataToGrafs["PRESSURE_X"][pointPosition] = dataFromMassage[0];
+    dataToGrafs["PRESSURE_Y"][pointPosition] = pointPosition;
+
+    for(int data = pointPosition+1; data < (pointPosition + sizeOfGap); data++){
+        dataToGrafs["PRESSURE_X"][data] = qQNaN();
+        dataToGrafs["VOLUME_X"][data] = qQNaN();
     }
-    if (!m_serial->open(QIODevice::ReadWrite))
-    {
-        qWarning()<< "[WARN]: Failed to connect COM port";
-    }else
-    {
 
-    }
+
+    if (pointPosition > 500)
+        pointPosition = 0;
+
+    m_ui->graphFlow->graph(0)->setData(dataToGrafs["PRESSURE_Y"], dataToGrafs["PRESSURE_X"]);//0
+    m_ui->graphFlow->replot();
+
+
+    m_ui->graphVolume->graph(0)->setData(dataToGrafs["VOLUME_Y"], dataToGrafs["VOLUME_X"]);//1
+    m_ui->graphVolume->replot();
+
+
 }
 
-void IVLSerialPort::slotSerialRead()
-{
-    m_message = m_serial->read(16);
 
-    emit signalDataRead();
-}
 
