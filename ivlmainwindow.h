@@ -2,6 +2,7 @@
 #define IVLMAINWINDOW_H
 
 #include <QMainWindow>
+#include "ui_mainwindow.h"
 
 namespace Ui {
 class IVLMainWindow;
@@ -16,7 +17,7 @@ public:
     ~IVLMainWindow();
 
 private:
-    Ui::IVLMainWindow *ui;
+    Ui::MainWindow *ui;
 };
 
 #endif // IVLMAINWINDOW_H
