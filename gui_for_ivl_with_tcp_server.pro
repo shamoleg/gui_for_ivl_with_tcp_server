@@ -6,7 +6,7 @@
 
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport serialport
 
 TARGET = gui_for_ivl_with_tcp_server
 TEMPLATE = app
@@ -34,3 +34,7 @@ HEADERS += \
 
 FORMS += \
     mainwindow.ui
+
+
+RESOURCES += \
+    res.qrc
